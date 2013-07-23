@@ -9,13 +9,13 @@ import (
 )
 
 var host = flag.String("host", "localhost:9876", "host and port of winnower")
+var secret = flag.String("secret", "goduckyourself", "shared secret")
 
 func main() {
 	flag.Parse()
 
 	message := "Hello Kyle!"
-	secret := []byte("goduckyourself")
-	err := WriteMessage(message, secret)
+	err := WriteMessage(message, []byte(*secret))
 
 	if err != nil {
 		log.Fatalf("You had one job: %+v", err)
