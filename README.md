@@ -4,7 +4,7 @@ minnow 鯫
 Winnow and chaff example in golang
 
 
-To start the server: ``go run server/server.go``
+To start the client: ``go run client/client.go``
 
 
 See: http://people.csail.mit.edu/rivest/Chaffing.txt
