@@ -57,7 +57,6 @@ func WriteMessage(message string, secret []byte) error {
         }
 
         header := &minnow.PacketHeader{
-            StreamId: 1,
             SequenceN: int32(i),
             Mac: mbuf,
             Size: int32(len(bytev)),
