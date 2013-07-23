@@ -89,7 +89,7 @@ func main() {
     if err != nil {
         log.Fatal("Error binding to socket: %+v", err)
     }
-    log.Print("Listening on: %s", *peer)
+    log.Printf("Listening on: %s", *peer)
     for {
         conn, err := ln.Accept()
 		messagePrinter := messageValidator("goduckyourself", printMessageChan())
