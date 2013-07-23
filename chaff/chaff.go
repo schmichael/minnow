@@ -8,7 +8,7 @@ import (
 	"github.com/schmichael/minnow"
 )
 
-var peer = flag.String("peer", "localhost:9876", "gimme a host and port")
+var host = flag.String("host", "localhost:9876", "host and port of winnower")
 
 func main() {
     flag.Parse()
@@ -32,7 +32,9 @@ func WriteMessage(message string, secret []byte) error {
 
     rand.Read(fakesecret[0:64])
 
-    conn, err := net.Dial("tcp", *peer)
+    conn, err := net.Dial("tcp", *host)
+	defer conn.Close()
+
     if err != nil {
         log.Fatalf("Connection failed: %+v", err)
     }
@@ -61,6 +63,5 @@ func WriteMessage(message string, secret []byte) error {
         log.Printf("Sent chaf packet: %d %v", i, fakedata)
     }
 
-    err = conn.Close()
     return err
 }
