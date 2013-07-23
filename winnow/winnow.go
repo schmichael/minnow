@@ -7,7 +7,7 @@ import (
     "crypto/sha512"
     "encoding/binary"
     "net"
-    "minnow"
+    "github.com/schmichael/minnow"
     "io"
 )
 
