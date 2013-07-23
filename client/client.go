@@ -33,6 +33,8 @@ func WriteMessage(message string, secret []byte) error {
     rand.Read(fakesecret[0:64])
 
     conn, err := net.Dial("tcp", *peer)
+	defer conn.Close()
+
     if err != nil {
         log.Fatalf("Connection failed: %+v", err)
     }
@@ -61,6 +63,5 @@ func WriteMessage(message string, secret []byte) error {
         log.Printf("Sent chaf packet: %d %v", i, fakedata)
     }
 
-    err = conn.Close()
     return err
 }
