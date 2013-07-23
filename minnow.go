@@ -1,21 +1,21 @@
 package minnow
 
 import (
-	"encoding/binary"
-	"hash"
 	"crypto/hmac"
 	"crypto/sha512"
+	"encoding/binary"
+	"hash"
 	"io"
 )
 
 type PacketHeader struct {
-    SequenceN int32
-    Mac [64]byte
-    Size int32
+	SequenceN int32
+	Mac       [64]byte
+	Size      int32
 }
 
 type Packet struct {
-	Header PacketHeader
+	Header  PacketHeader
 	Payload []byte
 }
 
@@ -29,7 +29,7 @@ func NewStream(w io.Writer, secret []byte) *Stream {
 }
 
 func (s *Stream) WritePacket(packet []byte, seqn int32) error {
-    var mbuf [64]byte
+	var mbuf [64]byte
 
 	s.h.Write(packet)
 	defer s.h.Reset()
@@ -42,8 +42,8 @@ func (s *Stream) WritePacket(packet []byte, seqn int32) error {
 
 	h := PacketHeader{
 		SequenceN: seqn,
-		Mac: mbuf,
-		Size: int32(len(packet)),
+		Mac:       mbuf,
+		Size:      int32(len(packet)),
 	}
 
 	err := binary.Write(s.w, binary.BigEndian, h)

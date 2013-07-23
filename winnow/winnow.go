@@ -1,14 +1,14 @@
 package main
 
 import (
-    "flag"
-    "log"
-    "crypto/hmac"
-    "crypto/sha512"
-    "encoding/binary"
-    "net"
-    "github.com/schmichael/minnow"
-    "io"
+	"crypto/hmac"
+	"crypto/sha512"
+	"encoding/binary"
+	"flag"
+	"github.com/schmichael/minnow"
+	"io"
+	"log"
+	"net"
 )
 
 // Creates an accumulator of new messages. Takes a function to call when valid data is accumulated
@@ -16,9 +16,9 @@ import (
 func messageValidator(secret string, valid chan []byte) func(*minnow.Packet) {
 	return func(m *minnow.Packet) {
 		if m == nil {
-			valid <-nil
+			valid <- nil
 		} else if hashData(secret, m.Payload) == m.Header.Mac {
-			valid <-m.Payload
+			valid <- m.Payload
 		}
 	}
 }
@@ -39,34 +39,34 @@ func hashData(secret string, data []byte) [64]byte {
 
 // TODO: Should refactor this into minnow.go (or equivalent)
 func readMessage(conn net.Conn, newMessages func(*minnow.Packet)) {
-    for {
-        res := new(minnow.PacketHeader)
-        err := binary.Read(conn, binary.BigEndian, res)
-        if err != nil {
+	for {
+		res := new(minnow.PacketHeader)
+		err := binary.Read(conn, binary.BigEndian, res)
+		if err != nil {
 			if err != io.EOF {
 				log.Fatalf("Received error on header reader: %v\n", err)
 			}
 			newMessages(nil)
-            break
-        }
+			break
+		}
 
 		d := make([]byte, res.Size)
 		_, err = io.ReadFull(conn, d)
-        if err != nil {
+		if err != nil {
 			if err != io.EOF {
 				log.Fatalf("Received error on header reader: %v\n", err)
 			}
 			newMessages(nil)
-            break
-        }
-        msg := minnow.Packet{Header: *res, Payload: d}
-        newMessages(&msg)
-    }
+			break
+		}
+		msg := minnow.Packet{Header: *res, Payload: d}
+		newMessages(&msg)
+	}
 }
 
 var peer = flag.String("peer", "0.0.0.0:9876", "gimme a host and port")
 
-func printMessageChan() chan []byte{
+func printMessageChan() chan []byte {
 	var c chan []byte = make(chan []byte)
 	go func() {
 		msg := ""
@@ -84,20 +84,20 @@ func printMessageChan() chan []byte{
 }
 
 func main() {
-    flag.Parse()
-    ln, err := net.Listen("tcp", *peer)
-    if err != nil {
-        log.Fatal("Error binding to socket: %+v", err)
-    }
-    log.Printf("Listening on: %s", *peer)
-    for {
-        conn, err := ln.Accept()
+	flag.Parse()
+	ln, err := net.Listen("tcp", *peer)
+	if err != nil {
+		log.Fatal("Error binding to socket: %+v", err)
+	}
+	log.Printf("Listening on: %s", *peer)
+	for {
+		conn, err := ln.Accept()
 		messagePrinter := messageValidator("goduckyourself", printMessageChan())
-        if err != nil {
-            log.Print("Error opening connection: %+v", err)
-            continue
-        }
+		if err != nil {
+			log.Print("Error opening connection: %+v", err)
+			continue
+		}
 
-        go readMessage(conn, messagePrinter)
-    }
+		go readMessage(conn, messagePrinter)
+	}
 }
