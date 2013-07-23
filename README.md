@@ -1,6 +1,8 @@
 minnow 鯫
 ========
 
+![](http://i.imgur.com/cuwkJr1.gif)
+
 Winnow and chaff example in golang
 
 
