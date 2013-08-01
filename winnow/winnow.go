@@ -11,6 +11,9 @@ import (
 	"net"
 )
 
+var bind = flag.String("bind", "localhost:9876", "host and port to bind to")
+var secret = flag.String("secret", "", "shared secret (required)")
+
 // Creates an accumulator of new messages. Takes a function to call when valid data is accumulated
 // Returns a function to call with new messages
 func messageValidator(secret string, valid chan []byte) func(*minnow.Packet) {
@@ -64,8 +67,6 @@ func readMessage(conn net.Conn, newMessages func(*minnow.Packet)) {
 	}
 }
 
-var peer = flag.String("peer", "0.0.0.0:9876", "gimme a host and port")
-
 func printMessageChan() chan []byte {
 	var c chan []byte = make(chan []byte)
 	go func() {
@@ -85,14 +86,20 @@ func printMessageChan() chan []byte {
 
 func main() {
 	flag.Parse()
-	ln, err := net.Listen("tcp", *peer)
+
+	if *secret == "" {
+		flag.Usage()
+		log.Fatalf("-secret required to be set")
+	}
+
+	ln, err := net.Listen("tcp", *bind)
 	if err != nil {
 		log.Fatal("Error binding to socket: %+v", err)
 	}
-	log.Printf("Listening on: %s", *peer)
+	log.Printf("Listening on: %s", *bind)
 	for {
 		conn, err := ln.Accept()
-		messagePrinter := messageValidator("goduckyourself", printMessageChan())
+		messagePrinter := messageValidator(*secret, printMessageChan())
 		if err != nil {
 			log.Print("Error opening connection: %+v", err)
 			continue
