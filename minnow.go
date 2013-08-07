@@ -18,8 +18,6 @@ import (
 var ErrAlreadyClosed = errors.New("Writer has already been closed")
 var ErrMaxLengthExceeded = errors.New("Maximum message length (1<<64 - 1) exceeded")
 
-var InitialMessageSize = 1024
-
 type Packet struct {
        Header  PacketHeader
        Payload []byte
@@ -43,7 +41,7 @@ func NewMessageWriteCloser(secret []byte, w io.WriteCloser) *MessageWriteCloser 
 	return &MessageWriteCloser{
 		closed: false,
 		hash: hmac.New(sha512.New, secret),
-		message: make([]byte, InitialMessageSize),
+		message: make([]byte, 0),
 		destination: w,
 		wg: new(sync.WaitGroup),
 	}
@@ -68,7 +66,7 @@ func (mw *MessageWriteCloser) Close() (error) {
 		// Write the real message
 		_, err := mw.writeMessage()
 
-		// Wait for chaff to finish writing
+		// Wait for chaff to finish writing before closing connection
 		mw.wg.Wait()
 
 		// Either close and handle error or just close
@@ -83,9 +81,10 @@ func (mw *MessageWriteCloser) Close() (error) {
 }
 
 func (mw *MessageWriteCloser) writeMessage() (n int, err error) {
+	log.Printf("Writing message <<%s>> len: %d cap: %d", string(mw.message), len(mw.message), cap(mw.message))
 	for n, _ = range mw.message {
 		_, err = mw.writePacket(uint64(n), mw.message[n:n + 1])
-		log.Printf("Wrote %s with err: %v", string(mw.message[n:n + 1]), err)
+		log.Printf("Wrote seq %d: %v with err: %v", n, mw.message[n:n + 1], err)
 		if err != nil {
 			return
 		}
