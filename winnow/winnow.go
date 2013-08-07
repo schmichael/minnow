@@ -62,8 +62,8 @@ func readMessage(conn net.Conn, newMessages func(*minnow.Packet)) {
 			newMessages(nil)
 			break
 		}
-		msg := minnow.Packet{Header: *res, Payload: d}
-		newMessages(&msg)
+		msg := &minnow.Packet{Header: *res, Payload: d}
+		newMessages(msg)
 	}
 }
 
