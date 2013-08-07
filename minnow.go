@@ -135,7 +135,7 @@ func binaryChaff(w io.Writer, done func()) {
 	for sz == 0 {
 		//FIXME Need to base amount of chaff of message size without
 		//      hinting at message size
-		sz = uint64(mathRand.Int63()) / 100000000000000
+		sz = uint64(mathRand.Int63()) / 1000000000000000
 	}
 
 	log.Printf("Writing %d chaff packets", sz)
@@ -167,5 +167,6 @@ func binaryChaff(w io.Writer, done func()) {
 		}
 		time.Sleep(time.Duration(mathRand.Intn(2)) * time.Millisecond)
 	}
+	log.Printf("Wrote %d chaff packets", ph.SequenceN)
 
 }
