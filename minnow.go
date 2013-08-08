@@ -134,7 +134,7 @@ type MessageReader struct {
 func NewMessageReader(secret []byte, r io.Reader) *MessageReader {
 	return &MessageReader{
 		hash:    hmac.New(sha512.New, secret),
-		message: *new([]byte),
+		message: make([]byte, 0),
 		reader:  r,
 		closed:  false,
 	}
