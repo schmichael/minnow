@@ -124,6 +124,65 @@ func (mw *MessageWriteCloser) writePacket(seqn uint64, packet []byte) (int, erro
 	return len(packet), nil
 }
 
+type MessageReader struct {
+	hash hash.Hash
+	message []byte
+	reader io.Reader
+	closed bool
+}
+
+func NewMessageReader(secret []byte, r io.Reader) *MessageReader{
+	return &MessageReader{
+		hash: hmac.New(sha512.New, secret),
+		message: *new([]byte),
+		reader: r,
+		closed: false,
+	}
+}
+
+func (r *MessageReader) ReadAll() []byte {
+	for {
+		res := new(PacketHeader)
+		err := binary.Read(r.reader, binary.BigEndian, res)
+		if err != nil {
+			if err != io.EOF {
+				// Probably shouldn't Fatal on this...
+				log.Fatalf("Received an error reading header: %w\n", err)
+			}
+			r.closed = true
+			break
+		}
+
+		d := make([]byte, res.Size)
+		_, err = io.ReadFull(r.reader, d)
+		if err != nil {
+			if err != io.EOF {
+				log.Fatalf("Received error reading message body: %w\n", err)
+			}
+			r.closed = true
+			break
+		}
+		if r.matches(d, res.Mac) {
+			r.message = append(r.message, d...)
+		}
+	}
+	return r.message
+}
+
+func (r *MessageReader) matches(data []byte, provided [64]byte) bool {
+	r.hash.Write(data)
+	defer r.hash.Reset()
+
+	m := r.hash.Sum(nil)
+
+	var mbuf [64]byte
+	for i, _ := range mbuf {
+		mbuf[i] = m[i]
+	}
+
+	return mbuf == provided
+}
+
 func binaryChaff(w io.Writer, done func()) {
 	defer done()
 
