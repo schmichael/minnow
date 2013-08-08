@@ -19,8 +19,8 @@ var ErrAlreadyClosed = errors.New("Writer has already been closed")
 var ErrMaxLengthExceeded = errors.New("Maximum message length (1<<64 - 1) exceeded")
 
 type Packet struct {
-       Header  PacketHeader
-       Payload []byte
+	Header  PacketHeader
+	Payload []byte
 }
 
 type PacketHeader struct {
@@ -30,20 +30,20 @@ type PacketHeader struct {
 }
 
 type MessageWriteCloser struct {
-	closed bool
-	hash hash.Hash
-	message []byte
+	closed      bool
+	hash        hash.Hash
+	message     []byte
 	destination io.WriteCloser
-	wg *sync.WaitGroup
+	wg          *sync.WaitGroup
 }
 
 func NewMessageWriteCloser(secret []byte, w io.WriteCloser) *MessageWriteCloser {
 	return &MessageWriteCloser{
-		closed: false,
-		hash: hmac.New(sha512.New, secret),
-		message: make([]byte, 0),
+		closed:      false,
+		hash:        hmac.New(sha512.New, secret),
+		message:     make([]byte, 0),
 		destination: w,
-		wg: new(sync.WaitGroup),
+		wg:          new(sync.WaitGroup),
 	}
 }
 
@@ -55,7 +55,7 @@ func (mw *MessageWriteCloser) Write(m []byte) (int, error) {
 }
 
 // Close is when we actually get the end of the message and can write it
-func (mw *MessageWriteCloser) Close() (error) {
+func (mw *MessageWriteCloser) Close() error {
 	if !mw.closed {
 		log.Printf("Writing message:\n%s", string(mw.message))
 		mw.closed = true
@@ -83,8 +83,8 @@ func (mw *MessageWriteCloser) Close() (error) {
 func (mw *MessageWriteCloser) writeMessage() (n int, err error) {
 	log.Printf("Writing message <<%s>> len: %d cap: %d", string(mw.message), len(mw.message), cap(mw.message))
 	for n, _ = range mw.message {
-		_, err = mw.writePacket(uint64(n), mw.message[n:n + 1])
-		log.Printf("Wrote seq %d: %v with err: %v", n, mw.message[n:n + 1], err)
+		_, err = mw.writePacket(uint64(n), mw.message[n:n+1])
+		log.Printf("Wrote seq %d: %v with err: %v", n, mw.message[n:n+1], err)
 		if err != nil {
 			return
 		}
@@ -125,18 +125,18 @@ func (mw *MessageWriteCloser) writePacket(seqn uint64, packet []byte) (int, erro
 }
 
 type MessageReader struct {
-	hash hash.Hash
+	hash    hash.Hash
 	message []byte
-	reader io.Reader
-	closed bool
+	reader  io.Reader
+	closed  bool
 }
 
-func NewMessageReader(secret []byte, r io.Reader) *MessageReader{
+func NewMessageReader(secret []byte, r io.Reader) *MessageReader {
 	return &MessageReader{
-		hash: hmac.New(sha512.New, secret),
+		hash:    hmac.New(sha512.New, secret),
 		message: *new([]byte),
-		reader: r,
-		closed: false,
+		reader:  r,
+		closed:  false,
 	}
 }
 
