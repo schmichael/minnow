@@ -41,7 +41,7 @@ func NewMessageWriteCloser(secret []byte, w io.WriteCloser) *MessageWriteCloser 
 		hash:        hmac.New(sha512.New, secret),
 		message:     make([]byte, 0),
 		destination: w,
-		numchaff:    1000, // FIXME: Randomize?
+		numchaff:    200, // FIXME: Randomize?
 	}
 }
 
@@ -62,7 +62,7 @@ func (mw *MessageWriteCloser) Close() error {
 
         for p := range sequentialPacketChannel(mw.message, mw.hash) {
             packets := make([]Packet, mw.numchaff + 1)
-            packets[0] = p
+            packets[0] = *p
             for i := 1; i < mw.numchaff + 1; i++ {
                 packets[i] = makeFakeMessage(1, p.Header.SequenceN)
             }
@@ -154,9 +154,9 @@ func (r *MessageReader) matches(data []byte, provided [64]byte) bool {
 
 // Send len(data) # of sequential packets, hashed with the provided hash.Hash
 // down the provided channel
-func sequentialPacketChannel(data []byte, hasher hash.Hash) chan Packet {
+func sequentialPacketChannel(data []byte, hasher hash.Hash) chan *Packet {
 	// FIXME: Packet size is hard-coded at 1
-	outchan := make(chan Packet)
+	outchan := make(chan *Packet)
 	go func() {
 		for i, _ := range data {
 			var mbuf [64]byte
@@ -173,7 +173,7 @@ func sequentialPacketChannel(data []byte, hasher hash.Hash) chan Packet {
 				Mac:       mbuf,
 				Size:      uint64(1),
 			}
-			outchan <- Packet{h, data[i : i+1]}
+			outchan <- &Packet{h, data[i : i+1]}
 		}
 
 		close(outchan)
