@@ -16,11 +16,6 @@ import (
 var ErrAlreadyClosed = errors.New("Writer has already been closed")
 var ErrMaxLengthExceeded = errors.New("Maximum message length (1<<64 - 1) exceeded")
 
-type FakePacketResult struct {
-	Hasher  hash.Hash
-	Message []byte
-}
-
 type Packet struct {
 	Header  PacketHeader
 	Payload []byte
@@ -46,7 +41,7 @@ func NewMessageWriteCloser(secret []byte, w io.WriteCloser) *MessageWriteCloser 
 		hash:        hmac.New(sha512.New, secret),
 		message:     make([]byte, 0),
 		destination: w,
-		numchaff:    1000, // FIXME: Randomize?
+		numchaff:    200, // FIXME: Randomize?
 	}
 }
 
@@ -62,30 +57,22 @@ func (mw *MessageWriteCloser) Close() error {
 	if !mw.closed {
 		defer mw.destination.Close()
 		log.Printf("Writing message:\n%s", string(mw.message))
+
 		mw.closed = true
-		numchans := mw.numchaff + 1
-		packetchans := make([]chan *Packet, numchans)
-		packetchans[0] = sequentialPacketChannel(mw.message, mw.hash)
-		// Write chaff asynchronously
-		for i := 1; i < numchans; i++ {
-			// FIXME: Length should be randomized
-			faker, err := fakeMessage(len(mw.message))
-			if err != nil {
-				return err
-			}
-			packetchans[i] = sequentialPacketChannel(faker.Message, faker.Hasher)
-		}
 
-		outpackets := randomPacketRouter(packetchans)
+        for p := range sequentialPacketChannel(mw.message, mw.hash) {
+            packets := make([]Packet, mw.numchaff + 1)
+            packets[0] = *p
+            for i := 1; i < mw.numchaff + 1; i++ {
+                packets[i] = makeFakeMessage(1, p.Header.SequenceN)
+            }
 
-		// FIXME: Randomize the packets/order
-		for p := range outpackets {
-			err := mw.writePacket(p)
-			if err != nil {
-				return err
-			}
-		}
+            packets = randomizePackets(packets)
 
+            for _, p := range packets {
+                mw.writePacket(&p)
+            }
+        }
 		return mw.destination.Close()
 	}
 	return ErrAlreadyClosed
@@ -189,56 +176,41 @@ func sequentialPacketChannel(data []byte, hasher hash.Hash) chan *Packet {
 			outchan <- &Packet{h, data[i : i+1]}
 		}
 
-		outchan <- nil
-	}()
-
-	return outchan
-}
-
-// Create a mock hasher and buffer
-func fakeMessage(packetSize int) (*FakePacketResult, error) {
-	var err error
-
-	payloadbuf := make([]byte, packetSize, packetSize)
-
-	sz := uint64(0)
-	for sz == 0 {
-		sz = uint64(mathRand.Int63()) / 1000000000000000
-	}
-	hashseed := make([]byte, sz, sz)
-
-	_, err = cryptoRand.Read(hashseed)
-	if err != nil {
-		return nil, err
-	}
-
-	h := hmac.New(sha512.New, hashseed)
-
-	_, err = cryptoRand.Read(payloadbuf)
-	if err != nil {
-		return nil, err
-	}
-
-	return &FakePacketResult{h, payloadbuf}, nil
-}
-
-// Radomly select packets from the provided channels until they
-// are all depleted (received a nil)
-func randomPacketRouter(inchans []chan *Packet) chan *Packet {
-	outchan := make(chan *Packet)
-	go func() {
-		for len(inchans) > 0 {
-			ndx := mathRand.Intn(len(inchans))
-			val := <-inchans[ndx]
-			// This packet provider is done
-			if val == nil {
-				inchans = append(inchans[:ndx], inchans[ndx+1:]...)
-			} else {
-				outchan <- val
-			}
-		}
 		close(outchan)
 	}()
 
 	return outchan
+}
+
+func randomizePackets(packets []Packet) []Packet {
+    newpackets := make([]Packet, 0)
+
+    for len(packets) > 0 {
+        randndx := mathRand.Intn(len(packets))
+        newpackets = append(newpackets, packets[randndx])
+        packets = append(packets[:randndx], packets[randndx+1:]...)
+    }
+
+    return newpackets
+}
+
+func makeFakeMessage(size uint64, sequencenum uint64) Packet {
+    crypthash := make([]byte, 64)
+    hash := new([64]byte)
+    payloadbuf := make([]byte, size)
+
+    cryptoRand.Read(payloadbuf)
+    cryptoRand.Read(crypthash)
+
+    for i, v := range crypthash {
+        hash[i] = v
+    }
+
+    ph := PacketHeader{
+        SequenceN: sequencenum,
+        Mac:       *hash,
+        Size:      size,
+    }
+
+    return Packet{ph, payloadbuf}
 }
