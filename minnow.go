@@ -64,7 +64,7 @@ func (mw *MessageWriteCloser) Close() error {
             packets := make([]Packet, mw.numchaff + 1)
             packets[0] = *p
             for i := 1; i < mw.numchaff + 1; i++ {
-                packets[i] = makeFakeMessage(1, p.Header.SequenceN)
+                packets[i] = makeChaff(1, p.Header.SequenceN)
             }
 
             packets = randomizePackets(packets)
@@ -182,19 +182,17 @@ func sequentialPacketChannel(data []byte, hasher hash.Hash) chan *Packet {
 	return outchan
 }
 
+// Randomize a slice of packets in-place
 func randomizePackets(packets []Packet) []Packet {
-    newpackets := make([]Packet, 0)
-
-    for len(packets) > 0 {
+    for i := 0; i < len(packets); i++ {
         randndx := mathRand.Intn(len(packets))
-        newpackets = append(newpackets, packets[randndx])
-        packets = append(packets[:randndx], packets[randndx+1:]...)
+        packets[i], packets[randndx] = packets[randndx], packets[i]
     }
 
-    return newpackets
+    return packets
 }
 
-func makeFakeMessage(size uint64, sequencenum uint64) Packet {
+func makeChaff(size uint64, sequencenum uint64) Packet {
     crypthash := make([]byte, 64)
     hash := new([64]byte)
     payloadbuf := make([]byte, size)
