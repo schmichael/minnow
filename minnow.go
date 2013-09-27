@@ -116,7 +116,7 @@ func (r *MessageReader) ReadAll() []byte {
 		if err != nil {
 			if err != io.EOF {
 				// Probably shouldn't Fatal on this...
-				log.Fatalf("Received an error reading header: %w\n", err)
+				log.Fatalf("Received an error reading header: %s\n", err)
 			}
 			r.closed = true
 			break
@@ -126,7 +126,7 @@ func (r *MessageReader) ReadAll() []byte {
 		_, err = io.ReadFull(r.reader, d)
 		if err != nil {
 			if err != io.EOF {
-				log.Fatalf("Received error reading message body: %w\n", err)
+				log.Fatalf("Received error reading message body: %s\n", err)
 			}
 			r.closed = true
 			break

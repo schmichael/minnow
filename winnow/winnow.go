@@ -20,7 +20,7 @@ func main() {
 
 	ln, err := net.Listen("tcp", *bind)
 	if err != nil {
-		log.Fatal("Error binding to socket: %+v", err)
+		log.Fatalf("Error binding to socket: %+v", err)
 	}
 	log.Printf("Listening on: %s", *bind)
 	for {
