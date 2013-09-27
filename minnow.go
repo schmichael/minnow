@@ -1,3 +1,6 @@
+// Minnow is a winnow and chaff implementation in Go.
+//
+// See: http://people.csail.mit.edu/rivest/Chaffing.txt
 package minnow
 
 import (
