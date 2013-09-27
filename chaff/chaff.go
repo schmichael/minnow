@@ -49,7 +49,7 @@ func WriteMessage(message []byte, secret []byte) error {
 		log.Fatalf("Connection failed: %+v", err)
 	}
 
-	rs := minnow.NewMessageWriteCloser(secret, conn)
+	rs := minnow.NewWriteCloser(secret, conn)
 	_, err = rs.Write(message)
 	if err != nil {
 		return err

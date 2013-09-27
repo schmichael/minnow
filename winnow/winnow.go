@@ -28,7 +28,7 @@ func main() {
 		if err != nil {
 			log.Fatalf("Error on incoming connection: %+v\n", err)
 		}
-		r := minnow.NewMessageReader([]byte(*secret), conn)
+		r := minnow.NewReader([]byte(*secret), conn)
 
 		go func() {
 			m := r.ReadAll()
