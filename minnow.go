@@ -13,8 +13,11 @@ import (
 	mathRand "math/rand"
 )
 
-var ErrAlreadyClosed = errors.New("Writer has already been closed")
-var ErrMaxLengthExceeded = errors.New("Maximum message length (1<<64 - 1) exceeded")
+var (
+	ErrAlreadyClosed = errors.New("Writer has already been closed")
+	ErrMaxLengthExceeded = errors.New("Maximum message length (1<<64 - 1) exceeded")
+	NumChaff = 200 //FIXME Randomize?
+)
 
 type Packet struct {
 	Header  PacketHeader
@@ -41,7 +44,7 @@ func NewWriteCloser(secret []byte, w io.WriteCloser) *WriteCloser {
 		hash:        hmac.New(sha512.New, secret),
 		message:     make([]byte, 0),
 		destination: w,
-		numchaff:    200, // FIXME: Randomize?
+		numchaff:    NumChaff,
 	}
 }
 
