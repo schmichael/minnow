@@ -60,19 +60,19 @@ func (mw *MessageWriteCloser) Close() error {
 
 		mw.closed = true
 
-        for p := range sequentialPacketChannel(mw.message, mw.hash) {
-            packets := make([]Packet, mw.numchaff + 1)
-            packets[0] = *p
-            for i := 1; i < mw.numchaff + 1; i++ {
-                packets[i] = makeFakeMessage(1, p.Header.SequenceN)
-            }
+		for p := range sequentialPacketChannel(mw.message, mw.hash) {
+			packets := make([]Packet, mw.numchaff+1)
+			packets[0] = *p
+			for i := 1; i < mw.numchaff+1; i++ {
+				packets[i] = makeFakeMessage(1, p.Header.SequenceN)
+			}
 
-            packets = randomizePackets(packets)
+			packets = randomizePackets(packets)
 
-            for _, p := range packets {
-                mw.writePacket(&p)
-            }
-        }
+			for _, p := range packets {
+				mw.writePacket(&p)
+			}
+		}
 		return mw.destination.Close()
 	}
 	return ErrAlreadyClosed
@@ -183,34 +183,34 @@ func sequentialPacketChannel(data []byte, hasher hash.Hash) chan *Packet {
 }
 
 func randomizePackets(packets []Packet) []Packet {
-    newpackets := make([]Packet, 0)
+	newpackets := make([]Packet, 0)
 
-    for len(packets) > 0 {
-        randndx := mathRand.Intn(len(packets))
-        newpackets = append(newpackets, packets[randndx])
-        packets = append(packets[:randndx], packets[randndx+1:]...)
-    }
+	for len(packets) > 0 {
+		randndx := mathRand.Intn(len(packets))
+		newpackets = append(newpackets, packets[randndx])
+		packets = append(packets[:randndx], packets[randndx+1:]...)
+	}
 
-    return newpackets
+	return newpackets
 }
 
 func makeFakeMessage(size uint64, sequencenum uint64) Packet {
-    crypthash := make([]byte, 64)
-    hash := new([64]byte)
-    payloadbuf := make([]byte, size)
+	crypthash := make([]byte, 64)
+	hash := new([64]byte)
+	payloadbuf := make([]byte, size)
 
-    cryptoRand.Read(payloadbuf)
-    cryptoRand.Read(crypthash)
+	cryptoRand.Read(payloadbuf)
+	cryptoRand.Read(crypthash)
 
-    for i, v := range crypthash {
-        hash[i] = v
-    }
+	for i, v := range crypthash {
+		hash[i] = v
+	}
 
-    ph := PacketHeader{
-        SequenceN: sequencenum,
-        Mac:       *hash,
-        Size:      size,
-    }
+	ph := PacketHeader{
+		SequenceN: sequencenum,
+		Mac:       *hash,
+		Size:      size,
+	}
 
-    return Packet{ph, payloadbuf}
+	return Packet{ph, payloadbuf}
 }
