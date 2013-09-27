@@ -27,7 +27,7 @@ type PacketHeader struct {
 	Size      uint64
 }
 
-type MessageWriteCloser struct {
+type WriteCloser struct {
 	closed      bool
 	hash        hash.Hash
 	message     []byte
@@ -35,8 +35,8 @@ type MessageWriteCloser struct {
 	numchaff    int
 }
 
-func NewMessageWriteCloser(secret []byte, w io.WriteCloser) *MessageWriteCloser {
-	return &MessageWriteCloser{
+func NewWriteCloser(secret []byte, w io.WriteCloser) *WriteCloser {
+	return &WriteCloser{
 		closed:      false,
 		hash:        hmac.New(sha512.New, secret),
 		message:     make([]byte, 0),
@@ -47,13 +47,13 @@ func NewMessageWriteCloser(secret []byte, w io.WriteCloser) *MessageWriteCloser 
 
 // Writes a message fragment to the internal buffer
 // Return value is always (len(m), nil)
-func (mw *MessageWriteCloser) Write(m []byte) (int, error) {
+func (mw *WriteCloser) Write(m []byte) (int, error) {
 	mw.message = append(mw.message, m...)
 	return len(m), nil
 }
 
 // Close is when we actually get the end of the message and can write it
-func (mw *MessageWriteCloser) Close() error {
+func (mw *WriteCloser) Close() error {
 	if !mw.closed {
 		defer mw.destination.Close()
 		log.Printf("Writing message:\n%s", string(mw.message))
@@ -78,7 +78,7 @@ func (mw *MessageWriteCloser) Close() error {
 	return ErrAlreadyClosed
 }
 
-func (mw *MessageWriteCloser) writePacket(packet *Packet) error {
+func (mw *WriteCloser) writePacket(packet *Packet) error {
 	log.Printf("Writing packet: #%d - %+v\n", packet.Header.SequenceN, packet.Payload)
 	err := binary.Write(mw.destination, binary.BigEndian, packet.Header)
 	if err != nil {
@@ -93,15 +93,15 @@ func (mw *MessageWriteCloser) writePacket(packet *Packet) error {
 	return nil
 }
 
-type MessageReader struct {
+type Reader struct {
 	hash    hash.Hash
 	message []byte
 	reader  io.Reader
 	closed  bool
 }
 
-func NewMessageReader(secret []byte, r io.Reader) *MessageReader {
-	return &MessageReader{
+func NewReader(secret []byte, r io.Reader) *Reader {
+	return &Reader{
 		hash:    hmac.New(sha512.New, secret),
 		message: make([]byte, 0),
 		reader:  r,
@@ -109,7 +109,7 @@ func NewMessageReader(secret []byte, r io.Reader) *MessageReader {
 	}
 }
 
-func (r *MessageReader) ReadAll() []byte {
+func (r *Reader) ReadAll() []byte {
 	for {
 		res := new(PacketHeader)
 		err := binary.Read(r.reader, binary.BigEndian, res)
@@ -138,7 +138,7 @@ func (r *MessageReader) ReadAll() []byte {
 	return r.message
 }
 
-func (r *MessageReader) matches(data []byte, provided [64]byte) bool {
+func (r *Reader) matches(data []byte, provided [64]byte) bool {
 	r.hash.Write(data)
 	defer r.hash.Reset()
 
