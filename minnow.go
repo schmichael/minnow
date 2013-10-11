@@ -28,9 +28,9 @@ type Packet struct {
 }
 
 type PacketHeader struct {
-	SequenceN uint64
+	SequenceN uint32
 	Mac       [64]byte
-	Size      uint64
+	Size      uint32
 }
 
 type WriteCloser struct {
@@ -175,9 +175,9 @@ func sequentialPacketChannel(data []byte, hasher hash.Hash) chan *Packet {
 			hasher.Reset()
 
 			h := PacketHeader{
-				SequenceN: uint64(i),
+				SequenceN: uint32(i),
 				Mac:       mbuf,
-				Size:      uint64(1),
+				Size:      uint32(1),
 			}
 			outchan <- &Packet{h, data[i : i+1]}
 		}
@@ -200,7 +200,7 @@ func randomizePackets(packets []Packet) []Packet {
 	return newpackets
 }
 
-func makeFakeMessage(size uint64, sequencenum uint64) Packet {
+func makeFakeMessage(size uint32, sequencenum uint32) Packet {
 	crypthash := make([]byte, 64)
 	hash := new([64]byte)
 	payloadbuf := make([]byte, size)
